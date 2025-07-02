@@ -4,3 +4,5 @@ geopy
 lightgbm
 joblib
 scikit-learn
+folium
+streamlit-folium
