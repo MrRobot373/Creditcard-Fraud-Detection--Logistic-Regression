@@ -16,8 +16,6 @@ def haversine(lat1, lon1, lat2, lon2):
 # ------------------- Page Setup -------------------
 st.set_page_config(page_title="Fraud Detection", layout="centered")
 st.markdown("<h1 style='color:#3498db;'>🔐 Credit Card Fraud Detection</h1>", unsafe_allow_html=True)
-st.markdown("Fill in the transaction details below:")
-
 # ------------------- Input Form -------------------
 with st.form("transaction_form"):
     col1, col2 = st.columns(2)
