@@ -5,18 +5,19 @@ from geopy.distance import geodesic
 import folium
 from streamlit_folium import st_folium
 
-# Load model and encoders
+# Load model and encoder
 model = joblib.load("Creditcard_fraud_detection_model.jb")
 encoder = joblib.load("lable_encoder.jb")
 
-# Haversine function for distance
+# Distance calculation
 def haversine(lat1, lon1, lat2, lon2):
     return geodesic((lat1, lon1), (lat2, lon2)).km
 
-# ------------------- Page Setup -------------------
+# Set page config
 st.set_page_config(page_title="Fraud Detection", layout="centered")
 st.markdown("<h1 style='color:#3498db;'>🔐 Credit Card Fraud Detection</h1>", unsafe_allow_html=True)
-# ------------------- Input Form -------------------
+
+# Form for transaction input
 with st.form("transaction_form"):
     col1, col2 = st.columns(2)
     with col1:
@@ -35,44 +36,51 @@ with st.form("transaction_form"):
         day = st.slider("Transaction Day", 1, 31, 15)
         month = st.slider("Transaction Month", 1, 12, 6)
 
-    submit = st.form_submit_button("🚨 Check For Fraud")
+    submitted = st.form_submit_button("🚨 Check For Fraud")
 
-# ------------------- Prediction Logic -------------------
-if submit:
+# On submit: process and store prediction result
+if submitted:
     if merchant and category and cc_num:
         distance = haversine(lat, long, merch_lat, merch_long)
-
         input_data = pd.DataFrame([[merchant, category, amt, distance, hour, day, month, gender, cc_num]],
                                   columns=['merchant', 'category', 'amt', 'distance', 'hour', 'day', 'month', 'gender', 'cc_num'])
 
-        # Encode categorical values
         for col in ['merchant', 'category', 'gender']:
             try:
                 input_data[col] = encoder[col].transform(input_data[col])
             except ValueError:
-                input_data[col] = -1  # Unknown categories fallback
+                input_data[col] = -1
 
-        # Hash credit card number
         input_data['cc_num'] = input_data['cc_num'].apply(lambda x: hash(x) % (10 ** 2))
 
-        # Make prediction
         prediction = model.predict(input_data)[0]
-        result = "🚩 Fraudulent Transaction" if prediction == 1 else "✅ Legitimate Transaction"
-
-        # Show map
-        st.subheader("📍 Transaction Map")
-        mid_lat = (lat + merch_lat) / 2
-        mid_long = (long + merch_long) / 2
-        m = folium.Map(location=[mid_lat, mid_long], zoom_start=12)
-
-        folium.Marker([lat, long], tooltip="User Location", icon=folium.Icon(color="blue")).add_to(m)
-        folium.Marker([merch_lat, merch_long], tooltip="Merchant Location", icon=folium.Icon(color="green")).add_to(m)
-        folium.PolyLine(locations=[[lat, long], [merch_lat, merch_long]], color='red').add_to(m)
-        st_folium(m, width=700, height=450)
-
-        # Show result
-        st.markdown("---")
-        st.markdown(f"<h2 style='color: {'red' if prediction == 1 else 'green'}'>{result}</h2>", unsafe_allow_html=True)
-
+        st.session_state["fraud_result"] = prediction
+        st.session_state["show_map"] = True
+        st.session_state["locations"] = {"user": (lat, long), "merchant": (merch_lat, merch_long)}
     else:
         st.error("⚠️ Please fill all required fields.")
+        st.session_state["fraud_result"] = None
+        st.session_state["show_map"] = False
+
+# ------------------- Display Results (persists after submit) -------------------
+if "fraud_result" in st.session_state and st.session_state["fraud_result"] is not None:
+    prediction = st.session_state["fraud_result"]
+    result = "🚩 Fraudulent Transaction" if prediction == 1 else "✅ Legitimate Transaction"
+    color = "red" if prediction == 1 else "green"
+    
+    st.markdown("---")
+    st.markdown("<h2 style='color:{}'>{}</h2>".format(color, result), unsafe_allow_html=True)
+
+# ------------------- Display Map -------------------
+if st.session_state.get("show_map", False):
+    st.subheader("📍 Transaction Map")
+    user_loc = st.session_state["locations"]["user"]
+    merchant_loc = st.session_state["locations"]["merchant"]
+    mid_lat = (user_loc[0] + merchant_loc[0]) / 2
+    mid_long = (user_loc[1] + merchant_loc[1]) / 2
+    m = folium.Map(location=[mid_lat, mid_long], zoom_start=12)
+
+    folium.Marker(user_loc, tooltip="User Location", icon=folium.Icon(color="blue")).add_to(m)
+    folium.Marker(merchant_loc, tooltip="Merchant Location", icon=folium.Icon(color="green")).add_to(m)
+    folium.PolyLine(locations=[user_loc, merchant_loc], color='red').add_to(m)
+    st_folium(m, width=700, height=450)
