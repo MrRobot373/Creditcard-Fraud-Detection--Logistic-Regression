@@ -4,7 +4,7 @@ import joblib
 import lightgbm as lgb 
 from geopy.distance import geodesic
 
-model = joblib.load("fraud_detection_model.jb")
+model = joblib.load("Creditcard_fraud_detection_model.jb")
 encoder = joblib.load("label_encoder.jb")
 
 def haversine(lat1, lon1, lat2, lon2):
