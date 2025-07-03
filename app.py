@@ -5,22 +5,17 @@ from geopy.distance import geodesic
 import folium
 from streamlit_folium import st_folium
 
-# Load model & encoder
 model = joblib.load("Creditcard_fraud_detection_model.jb")
 encoder = joblib.load("lable_encoder.jb")
 
-# Distance function
 def haversine(lat1, lon1, lat2, lon2):
     return geodesic((lat1, lon1), (lat2, lon2)).km
 
-# Page setup
 st.set_page_config(page_title="Fraud Detection", layout="wide")
 st.markdown("<h1 style='color:#3498db;'>🔐 Credit Card Fraud Detection</h1>", unsafe_allow_html=True)
 
-# Split layout
 left, right = st.columns([1, 1])
 
-# ---------------- Left: Form ----------------
 with left.form("transaction_form"):
     st.subheader("📝 Transaction Details")
 
@@ -40,7 +35,6 @@ with left.form("transaction_form"):
 
     submitted = st.form_submit_button("🚨 Check For Fraud")
 
-# ---------------- Prediction Logic ----------------
 if submitted:
     if merchant and category and cc_num:
         distance = haversine(lat, long, merch_lat, merch_long)
@@ -65,7 +59,6 @@ if submitted:
         st.session_state["fraud_result"] = None
         st.session_state["show_map"] = False
 
-# ---------------- Right: Result ----------------
 with right:
     st.subheader("🔎 Prediction Result")
 
@@ -78,7 +71,6 @@ with right:
     else:
         st.info("Submit a transaction to see the result.")
 
-# ---------------- Map Section ----------------
 if st.session_state.get("show_map", False):
     st.subheader("📍 Transaction Map")
     user_loc = st.session_state["locations"]["user"]
