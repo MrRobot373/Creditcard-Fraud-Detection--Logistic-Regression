@@ -14,13 +14,8 @@ A web-based application built using **Streamlit** and **LightGBM** to predict fr
 
 ---
 
-## 📁 Project Structure
-.
-├── app.py # Streamlit web app
-├── Untitled0.ipynb # Data processing and model training
-├── fraud_detection_model.jb # Trained model
-├── label_encoder.jb # Label encoders 
-
+## 📁 Project Link
+. https://creditcard-fraud-detection-logisticregression.streamlit.app/
 
 ---
 
